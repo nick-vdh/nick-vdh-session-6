@@ -8,6 +8,12 @@
 
 **Input**: User description: "Support for Overdue Todo Items — as a todo application user, I want to easily identify and distinguish overdue tasks in my todo list so that I can prioritize my work and quickly see which tasks are past their due date. The feature must include automated tests covering the overdue determination logic and its display."
 
+## Clarifications
+
+### Session 2026-10-15
+
+- Q: If the app stays open past midnight, should todos that just became overdue be marked automatically without user action? → A: Yes, update automatically at midnight (local time), no user action needed.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Spot Overdue Todos at a Glance (Priority: P1)
@@ -65,7 +71,7 @@ The overdue indication is conveyed through more than color alone (a text label),
 - A completed todo is never shown as overdue, regardless of due date.
 - A todo with no due date is never overdue.
 - A todo with a missing or invalid due date value is treated as having no due date and is not shown as overdue.
-- If the user keeps the application open across midnight, a todo due "yesterday" becomes overdue once the day rolls over, no later than the next refresh of the list.
+- If the user keeps the application open across midnight, a todo due "yesterday" automatically becomes overdue when the local day rolls over, without any user action or page reload.
 - Overdue determination uses the user's local calendar date.
 - A list containing only overdue todos, or none, displays correctly.
 
@@ -78,11 +84,12 @@ The overdue indication is conveyed through more than color alone (a text label),
 - **FR-003**: The system MUST display overdue todos with a visually distinct appearance compared to non-overdue todos in the todo list.
 - **FR-004**: The system MUST show a text label ("Overdue") on each overdue todo so the status is not conveyed by color alone.
 - **FR-005**: The overdue indication MUST update immediately when a todo is completed, un-completed, or has its due date edited.
+- **FR-005a**: While the application is open, the overdue indication MUST also update automatically when the local calendar day changes (midnight), without user action or reload.
 - **FR-006**: The overdue indication MUST remain legible and consistent with the application's visual theme in both light and dark modes.
 - **FR-007**: The overdue status MUST be available to assistive technologies as text.
 - **FR-008**: The overdue determination MUST be derived from existing todo data (completion status and due date); it MUST NOT require users to enter additional information.
 - **FR-009**: The feature MUST NOT introduce filtering, sorting by overdue, reminders, or notifications; the existing newest-first ordering of the list is unchanged.
-- **FR-010**: The feature MUST be covered by automated tests that verify the overdue determination rules (past, today, future, no due date, completed, invalid date) and the display of the overdue indication (shown for overdue todos, absent otherwise, updated after changes).
+- **FR-010**: The feature MUST be covered by automated tests that verify the overdue determination rules (past, today, future, no due date, completed, invalid date) and the display of the overdue indication (shown for overdue todos, absent otherwise, updated after changes and after the local day rolls over).
 
 ### Key Entities
 
@@ -94,7 +101,7 @@ The overdue indication is conveyed through more than color alone (a text label),
 
 - **SC-001**: Users can identify every overdue todo in a list of up to 50 todos in under 5 seconds without comparing dates manually.
 - **SC-002**: 100% of incomplete todos with a past due date show the overdue indication, and 0% of completed, undated, due-today, or future-dated todos show it.
-- **SC-003**: The overdue indication updates within 1 second of the user completing, un-completing, or editing a todo.
+- **SC-003**: The overdue indication updates within 1 second of the user completing, un-completing, or editing a todo, and within 1 minute after local midnight for an open application.
 - **SC-004**: The overdue indication is distinguishable by users who cannot perceive color differences, because a text label is always present.
 - **SC-005**: Automated tests covering the overdue rules and display pass, and the new behavior meets the project's required test coverage.
 
@@ -103,6 +110,6 @@ The overdue indication is conveyed through more than color alone (a text label),
 - "Overdue" means the due date is strictly before today's date in the user's local time zone; a todo due today is not overdue.
 - Only the due date (day granularity) is tracked; there is no time-of-day on due dates.
 - The existing todo data already contains the completion status and optional due date, so no new data needs to be stored.
-- The overdue state is computed when the list is displayed and refreshed on todo changes; real-time live updates at midnight are not required.
+- The overdue state is computed when the list is displayed, refreshed on todo changes, and re-evaluated automatically when the local day changes while the application is open.
 - The existing theme palettes will be used for the overdue styling.
 - Out of scope: overdue filtering or sorting, reminders/notifications, priority levels, and mobile-specific optimization (consistent with the project's functional requirements).
