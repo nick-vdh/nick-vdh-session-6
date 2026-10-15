@@ -13,7 +13,7 @@ describe('ConfirmDialog Component', () => {
   });
 
   it('should not render when isOpen is false', () => {
-    const { container } = render(
+    render(
       <ConfirmDialog
         isOpen={false}
         title="Confirm"
@@ -23,7 +23,7 @@ describe('ConfirmDialog Component', () => {
       />
     );
     
-    expect(container.querySelector('.confirm-dialog-overlay')).not.toBeInTheDocument();
+    expect(screen.queryByText('Are you sure?')).not.toBeInTheDocument();
   });
 
   it('should render when isOpen is true', () => {
@@ -109,7 +109,7 @@ describe('ConfirmDialog Component', () => {
   });
 
   it('should apply danger style when isDangerous is true', () => {
-    const { container } = render(
+    render(
       <ConfirmDialog
         isOpen={true}
         title="Confirm"

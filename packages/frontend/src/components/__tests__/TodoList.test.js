@@ -44,12 +44,9 @@ describe('TodoList Component', () => {
   });
 
   it('should render correct number of todo cards', () => {
-    const { container } = render(
-      <TodoList todos={mockTodos} {...mockHandlers} isLoading={false} />
-    );
+    render(<TodoList todos={mockTodos} {...mockHandlers} isLoading={false} />);
     
-    const cards = container.querySelectorAll('.todo-card');
-    expect(cards).toHaveLength(2);
+    expect(screen.getAllByTestId('todo-card')).toHaveLength(2);
   });
 
   it('should pass handlers to TodoCard components', () => {
@@ -58,5 +55,21 @@ describe('TodoList Component', () => {
     // Verify that edit buttons exist for each todo
     expect(screen.getAllByLabelText(/Edit/)).toHaveLength(2);
     expect(screen.getAllByLabelText(/Delete/)).toHaveLength(2);
+  });
+
+  it('should forward today to each card and keep the given order', () => {
+    const todos = [
+      { id: 3, title: 'Past due', dueDate: '2025-06-14', completed: 0, createdAt: '' },
+      { id: 2, title: 'Due today', dueDate: '2025-06-15', completed: 0, createdAt: '' },
+      { id: 1, title: 'Done', dueDate: '2025-06-01', completed: 1, createdAt: '' }
+    ];
+    render(<TodoList todos={todos} today="2025-06-15" {...mockHandlers} isLoading={false} />);
+
+    expect(screen.getAllByText('Overdue')).toHaveLength(1);
+    const cards = screen.getAllByTestId('todo-card');
+    expect(cards[0]).toHaveClass('overdue');
+    expect(cards[0]).toHaveTextContent('Past due');
+    expect(cards[1]).not.toHaveClass('overdue');
+    expect(cards[2]).not.toHaveClass('overdue');
   });
 });

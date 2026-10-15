@@ -4,9 +4,11 @@ import TodoList from './components/TodoList';
 import ThemeToggle from './components/ThemeToggle';
 import ConfirmDialog from './components/ConfirmDialog';
 import TodoService from './services/todoService';
+import { useToday } from './utils/useToday';
 import './App.css';
 
 function App() {
+  const today = useToday();
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -151,6 +153,7 @@ function App() {
               onEdit={handleEditTodo}
               onDelete={handleDeleteTodo}
               isLoading={isDeleting}
+              today={today}
             />
           )}
         </div>

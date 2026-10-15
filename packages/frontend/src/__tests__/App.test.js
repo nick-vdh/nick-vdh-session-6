@@ -1,8 +1,9 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { rest } from 'msw';
 import { setupServer } from 'msw/node';
 import App from '../App';
+import TodoService from '../services/todoService';
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -138,10 +139,8 @@ describe('App Component', () => {
 
     expect(screen.getByText('Loading your todos...')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByText('Learn React')).toBeInTheDocument();
-      expect(screen.getByText('Build TODO app')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Learn React')).toBeInTheDocument();
+    expect(screen.getByText('Build TODO app')).toBeInTheDocument();
   });
 
   test('creates a new todo', async () => {
@@ -231,5 +230,96 @@ describe('App Component', () => {
     const themToggleAfter = screen.getByRole('button', { name: /Switch to light mode/ });
     fireEvent.click(themToggleAfter);
     expect(localStorage.getItem('todoAppTheme')).toBe('light');
+  });
+});
+
+describe('App overdue indicator', () => {
+  const buildTodo = (overrides) => ({
+    id: 1,
+    title: 'Pay rent',
+    dueDate: '2025-06-14',
+    completed: 0,
+    createdAt: '2025-06-01T00:00:00Z',
+    ...overrides
+  });
+
+  const renderWithTodos = async (todos) => {
+    jest.spyOn(TodoService, 'getAllTodos').mockResolvedValue(todos);
+    render(<App />);
+    await screen.findByText(todos[0].title);
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2025, 5, 15, 12, 0, 0));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+  });
+
+  test('shows the overdue label only for incomplete past-due todos', async () => {
+    await renderWithTodos([
+      buildTodo({ id: 1, title: 'Past due' }),
+      buildTodo({ id: 2, title: 'Due today', dueDate: '2025-06-15' }),
+      buildTodo({ id: 3, title: 'Done', completed: 1 })
+    ]);
+
+    expect(screen.getAllByText('Overdue')).toHaveLength(1);
+  });
+
+  test('removes and restores the label when completion is toggled', async () => {
+    await renderWithTodos([buildTodo()]);
+    const toggle = jest.spyOn(TodoService, 'toggleTodoStatus');
+    expect(screen.getByText('Overdue')).toBeInTheDocument();
+
+    toggle.mockResolvedValueOnce(buildTodo({ completed: 1 }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    await waitFor(() => expect(screen.queryByText('Overdue')).not.toBeInTheDocument());
+
+    toggle.mockResolvedValueOnce(buildTodo({ completed: 0 }));
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect(await screen.findByText('Overdue')).toBeInTheDocument();
+  });
+
+  test.each([['today', '2025-06-15'], ['a future date', '2025-07-01']])(
+    'removes the label when the due date is edited to %s',
+    async (_description, newDueDate) => {
+      await renderWithTodos([buildTodo()]);
+      jest.spyOn(TodoService, 'updateTodo').mockResolvedValue(buildTodo({ dueDate: newDueDate }));
+
+      fireEvent.click(screen.getByLabelText(/Edit "Pay rent"/));
+      fireEvent.change(screen.getByLabelText('Edit due date'), { target: { value: newDueDate } });
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+      // The title only appears as text once the card has left edit mode.
+      expect(await screen.findByText('Pay rent')).toBeInTheDocument();
+      expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+    }
+  );
+
+  test('adds the label when a due date is edited to a past date', async () => {
+    await renderWithTodos([buildTodo({ dueDate: '2025-06-20' })]);
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+    jest.spyOn(TodoService, 'updateTodo').mockResolvedValue(buildTodo({ dueDate: '2025-06-01' }));
+
+    fireEvent.click(screen.getByLabelText(/Edit "Pay rent"/));
+    fireEvent.change(screen.getByLabelText('Edit due date'), { target: { value: '2025-06-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Overdue')).toBeInTheDocument();
+  });
+
+  test('marks a todo due today as overdue after local midnight without user action', async () => {
+    jest.setSystemTime(new Date(2025, 5, 15, 23, 59, 0));
+    await renderWithTodos([buildTodo({ dueDate: '2025-06-15' })]);
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(62 * 1000);
+    });
+
+    expect(screen.getByText('Overdue')).toBeInTheDocument();
   });
 });

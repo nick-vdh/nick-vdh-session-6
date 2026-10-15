@@ -63,9 +63,7 @@ describe('TodoForm Component', () => {
     
     const button = screen.getByRole('button', { name: /Add Todo/ });
     
-    await waitFor(() => {
-      fireEvent.click(button);
-    });
+    fireEvent.click(button);
     
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith('New Todo', null);
@@ -84,9 +82,7 @@ describe('TodoForm Component', () => {
     
     const button = screen.getByRole('button', { name: /Add Todo/ });
     
-    await waitFor(() => {
-      fireEvent.click(button);
-    });
+    fireEvent.click(button);
     
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith('New Todo', '2025-12-25');
@@ -102,14 +98,12 @@ describe('TodoForm Component', () => {
     
     const button = screen.getByRole('button', { name: /Add Todo/ });
     
-    await waitFor(() => {
-      fireEvent.click(button);
-    });
+    fireEvent.click(button);
     
     await waitFor(() => {
-      expect(screen.getByText('0/255')).toBeInTheDocument();
       expect(titleInput).toHaveValue('');
     });
+    expect(screen.getByText('0/255')).toBeInTheDocument();
   });
 
   it('should disable inputs when loading', () => {
@@ -133,9 +127,7 @@ describe('TodoForm Component', () => {
     
     const button = screen.getByRole('button', { name: /Add Todo/ });
     
-    await waitFor(() => {
-      fireEvent.click(button);
-    });
+    fireEvent.click(button);
     
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith('Test Todo', null);
